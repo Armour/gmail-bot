@@ -1,9 +1,7 @@
-from __future__ import print_function
-
-import httplib2
 import os
 import re
 import base64
+import httplib2
 import mimetypes
 
 from apiclient import discovery
@@ -11,11 +9,11 @@ from apiclient import errors
 from oauth2client import client
 from oauth2client import tools
 from oauth2client.file import Storage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
 from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 try:
     import argparse
@@ -23,6 +21,8 @@ try:
 except ImportError:
     flags = None
 
+
+# If modifying these scopes, delete your previously saved credentials at ~/.credentials/
 SCOPES = 'https://www.googleapis.com/auth/gmail.modify'
 CLIENT_SECRET_FILE = 'client_secret.json'
 APPLICATION_NAME = 'CMPT412 Downloader'
@@ -148,12 +148,12 @@ def set_read(service, msg_id, msg_labels, user_id='me'):
     except AssertionError:
         print('[MsgId %s] Assertion error occurred, set read failed.' % msg_id)
 
-def create_message_with_attachment(sender, to, subject, message_text, file):
+def create_message_with_attachment(sender, receiver, subject, message_text, file):
     """Create a message for an email.
 
     Args:
         sender: Email address of the sender.
-        to: Email address of the receiver.
+        receiver: Email address of the receiver.
         subject: The subject of the email message.
         message_text: The text of the email message.
         file: The path to the file to be attached.
@@ -162,7 +162,7 @@ def create_message_with_attachment(sender, to, subject, message_text, file):
         An object containing a base64url encoded email object.
     """
     message = MIMEMultipart()
-    message['to'] = to
+    message['to'] = receiver
     message['from'] = sender
     message['subject'] = subject
 
@@ -175,7 +175,7 @@ def create_message_with_attachment(sender, to, subject, message_text, file):
         content_type = 'application/octet-stream'
     main_type, sub_type = content_type.split('/', 1)
     if main_type == 'text':
-        fp = open(file, 'rb')
+        fp = open(file, 'r')
         msg = MIMEText(fp.read(), _subtype=sub_type)
         fp.close()
     elif main_type == 'image':
@@ -195,14 +195,14 @@ def create_message_with_attachment(sender, to, subject, message_text, file):
     msg.add_header('Content-Disposition', 'attachment', filename=filename)
     message.attach(msg)
 
-    return {'raw': base64.urlsafe_b64encode(message.as_string())}
+    return {'raw': base64.urlsafe_b64encode(message.as_string().encode('UTF-8')).decode('ascii')}
 
-def send_message(service, to, message, user_id='me'):
+def send_message(service, receiver, message, user_id='me'):
     """Send an email message.
 
     Args:
         service: Authorized Gmail API service instance.
-        to: The email address we want to send to
+        receiver: Email address of the receiver.
         message: Message to be sent.
         user_id: User's email address. The special value "me" can be used to indicate the authenticated user.
 
@@ -212,7 +212,7 @@ def send_message(service, to, message, user_id='me'):
     try:
         message = (service.users().messages().send(userId=user_id, body=message).execute())
         msg_id = message['id']
-        print("✨  ======> Successfully sent message with id %s to %s" % (msg_id, to))
+        print("✨  ======> Successfully sent message with id %s to %s" % (msg_id, receiver))
     except errors.HttpError as error:
         print('[MsgId %s] Http error occurred when sending message %s to %s' % (msg_id, to))
 
@@ -231,16 +231,16 @@ def main():
     print(messages)
 
     for message in messages:
-        to = get_attachments(service, message['id'], './download')
-        if to is not None:
+        receiver = get_attachments(service, message['id'], './download')
+        if receiver is not None:
             set_read(service, message['id'], {'removeLabelIds': ['UNREAD'], 'addLabelIds': []})
             # do something here for the downloaded attachemnts
-            reply = create_message_with_attachment(sender='yourmailhere',
-                                                   to=to,
-                                                   subject='CMPT412 Test Result (Do not reply this)',
+            reply = create_message_with_attachment(sender='CMPT412 Bot',
+                                                   receiver=receiver,
+                                                   subject='[CMPT412] Test Result',
                                                    message_text='blahblah',
                                                    file='./mailbot.py')
-            send_message(service, sender, reply)
+            send_message(service, receiver, reply)
 
 if __name__ == '__main__':
     main()
