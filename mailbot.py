@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""Gmail bot."""
+
+__author__ = 'Chong Guo'
+__copyright__ = 'Copyright 2018, Chong Guo'
+__license__ = 'MIT'
+__email__ = 'armourcy@email.com'
+
 import os
 import re
 import base64

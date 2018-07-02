@@ -1,3 +1,8 @@
+# General
+.DS_Store
+*~
+*.swp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -99,6 +104,12 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# .vscode
+.vscode/
+
+# .idea
+.idea/
 
 # secret file
 client_secret.json
